@@ -1,5 +1,7 @@
 const { app, BrowserWindow, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
+const activeWin = require('active-win');
+const osu = require('node-os-utils');
 
 
 
@@ -20,6 +22,22 @@ function createWindow() {
   mainWindow.on('closed', function () {
     mainWindow = null;
   });
+}
+
+function trackActivity() {
+  setInterval(async () => {
+    const window = await activeWin();
+    console.log(`Active window: ${window.owner.name} - ${window.title}`);
+  }, 1000); // Sleduje každou sekundu
+}
+
+function trackIdleTime() {
+  const idle = osu.idle;
+
+  setInterval(async () => {
+    const idleTime = await idle.getTime();
+    console.log(`Idle time: ${idleTime} seconds`);
+  }, 1000); // Kontroluje každou sekundu
 }
 
 app.on('ready', () => {
