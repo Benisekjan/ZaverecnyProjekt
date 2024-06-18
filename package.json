@@ -1,0 +1,20 @@
+{
+  "name": "rocnikovyprojekt",
+  "version": "1.0.0",
+  "description": "Systém pro správu a sledování aktivity  - Desktopová aplikaci, která umožňuje uživatelům sledovat, kolik času tráví na různých aplikacích a webech na svém zařízení, a zaznamenává, kdy jsou neaktivní. Aplikace bude umístěna v systémové liště (system tray) a bude poskytovat podrobné statistiky o aktivitách uživatele, aby jim pomohla analyzovat a optimalizovat jejich produktivitu.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron src/main.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^31.0.1"
+  },
+  "dependencies": {
+    "active-win": "^9.0.0",
+    "node-os-utils": "^1.3.7"
+  }
+}
