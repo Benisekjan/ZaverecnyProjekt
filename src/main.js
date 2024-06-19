@@ -1,12 +1,15 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } = require('electron');
 const path = require('path');
-const osu = require('node-os-utils');
 const sqlite3 = require('sqlite3').verbose();
+const schedule = require('node-schedule');
 
+// Inicializace proměnných
 let mainWindow;
 let tray;
+let lastActiveTime = Date.now();
+let idleInterval;
 
-// inicializace databáze
+// Inicializace databáze
 let db = new sqlite3.Database('activity-tracker.db', (err) => {
   if (err) {
     console.error(err.message);
@@ -46,7 +49,7 @@ async function createWindow() {
   });
 }
 
-// čas aktivity
+// Čas aktivity
 async function trackActivity() {
   const activeWin = await import('active-win');
 
@@ -61,20 +64,44 @@ async function trackActivity() {
   }, 1000);
 }
 
-// čas neaktivity
+// Čas neaktivity
 function trackIdleTime() {
-  const idle = osu.idle;
-
-  setInterval(async () => {
-    const idleTime = await idle.getTime();
-    db.run(`INSERT INTO idle_time (duration) VALUES (?)`, [idleTime], function(err) {
-      if (err) {
-        return console.error(err.message);
-      }
-      console.log(`Idle time recorded: ${idleTime} seconds`);
-    });
-  }, 1000);
+  schedule.scheduleJob('* * * * * *', () => {
+    const currentTime = Date.now();
+    const idleTime = Math.floor((currentTime - lastActiveTime) / 1000);
+    
+    if (idleTime > 0) {
+      db.run(`INSERT INTO idle_time (duration) VALUES (?)`, [idleTime], function(err) {
+        if (err) {
+          return console.error(err.message);
+        }
+        console.log(`Idle time recorded: ${idleTime} seconds`);
+        lastActiveTime = currentTime;
+      });
+    }
+  });
 }
+
+// Načítání dat z databáze a jejich odesílání do renderer procesu
+function sendDataToRenderer() {
+  db.all(`SELECT * FROM activity ORDER BY start_time DESC LIMIT 10`, [], (err, rows) => {
+    if (err) {
+      throw err;
+    }
+    mainWindow.webContents.send('activity-data', rows);
+  });
+
+  db.all(`SELECT * FROM idle_time ORDER BY timestamp DESC LIMIT 10`, [], (err, rows) => {
+    if (err) {
+      throw err;
+    }
+    mainWindow.webContents.send('idle-data', rows);
+  });
+}
+
+ipcMain.on('request-data', (event) => {
+  sendDataToRenderer();
+});
 
 app.on('ready', () => {
   createWindow();
@@ -93,6 +120,9 @@ app.on('ready', () => {
   // Spuštění sledování aktivity a neaktivity
   trackActivity();
   trackIdleTime();
+
+  // Odeslání dat do renderer procesu každých 5 sekund
+  setInterval(sendDataToRenderer, 5000);
 });
 
 app.on('window-all-closed', function () {

@@ -3,9 +3,65 @@
 <head>
   <meta charset="UTF-8">
   <title>Activity Tracker</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h1>Welcome to Activity Tracker</h1>
-  <p>Monitor and analyze your productivity.</p>
-</body>
+    <h1>Activity Tracker</h1>
+    <h2>Active Window Times</h2>
+    <table id="activity-table">
+      <thead>
+        <tr>
+          <th>Application</th>
+          <th>Window Title</th>
+          <th>Start Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Data will be inserted here -->
+      </tbody>
+    </table>
+    
+    <h2>Idle Times</h2>
+    <table id="idle-table">
+      <thead>
+        <tr>
+          <th>Duration (seconds)</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Data will be inserted here -->
+      </tbody>
+    </table>
+    
+    <script>
+      const { ipcRenderer } = require('electron');
+  
+      ipcRenderer.on('activity-data', (event, data) => {
+        const tableBody = document.getElementById('activity-table').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+        data.forEach(row => {
+          const newRow = tableBody.insertRow();
+          newRow.insertCell(0).innerText = row.app_name;
+          newRow.insertCell(1).innerText = row.window_title;
+          newRow.insertCell(2).innerText = row.start_time;
+        });
+      });
+  
+      ipcRenderer.on('idle-data', (event, data) => {
+        const tableBody = document.getElementById('idle-table').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+        data.forEach(row => {
+          const newRow = tableBody.insertRow();
+          newRow.insertCell(0).innerText = row.duration;
+          newRow.insertCell(1).innerText = row.timestamp;
+        });
+      });
+  
+      // Požádáme o data po načtení stránky
+      window.onload = () => {
+        ipcRenderer.send('request-data');
+      };
+    </script>
+  </body>
 </html>
